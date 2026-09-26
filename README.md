@@ -1,5 +1,7 @@
 ![](header.png?raw=true)
 
+DON'T DOWNLOAD THIS, IT DOESN'T CONTAIN ANY CHANGES (yet), AND IT MAY BE USED FOR PERSONAL PURPOSES (for now)
+
 A complete decompilation of Retro Engine v3.
 
 # **SUPPORT THE OFFICIAL RELEASE OF SONIC CD**
