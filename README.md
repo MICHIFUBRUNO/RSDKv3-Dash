@@ -1,4 +1,4 @@
-![](header.png?raw=true)
+<img width="1254" height="351" alt="Max Engine" src="https://github.com/user-attachments/assets/00b068b5-589f-4b75-b59d-e2b481d0b95b" />
 
 The definitive version of RSDKv3!! (BTW, EXPECT BUGS AND STUFF, THIS IS FAR FROM BEING FINISHED!!!)
 
