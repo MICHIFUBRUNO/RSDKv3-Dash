@@ -142,6 +142,7 @@ extern int cameraShakeX;
 extern int cameraShakeY;
 extern int cameraLag;
 extern int cameraLagStyle;
+extern int cameradirection;
 
 extern int xBoundary1;
 extern int newXBoundary1;

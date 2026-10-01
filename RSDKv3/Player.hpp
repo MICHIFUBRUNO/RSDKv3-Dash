@@ -21,7 +21,7 @@ struct Player {
     int angle;
     int timer;
     int lookPos;
-    int values[8];
+    int values[47];
     byte collisionMode;
     byte skidding;
     byte pushing;
@@ -38,6 +38,8 @@ struct Player {
     int jumpCap;
     int rollingAcceleration;
     int rollingDeceleration;
+    // int scaleH = 1;
+    // int scaleV;
     byte visible;
     byte tileCollisions;
     byte objectInteractions;

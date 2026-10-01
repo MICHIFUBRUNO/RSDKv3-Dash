@@ -598,6 +598,8 @@ void RetroEngine::LoadXMLWindowText()
     }
     SetActiveMod(-1);
 }
+
+
 void RetroEngine::LoadXMLVariables()
 {
     FileInfo info;

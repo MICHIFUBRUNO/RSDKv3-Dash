@@ -7,6 +7,7 @@ InputData keyPress = InputData();
 InputData keyDown  = InputData();
 
 bool anyPress = false;
+bool AnyHold = false;
 
 int touchDown[8];
 int touchX[8];
@@ -354,6 +355,10 @@ void ControllerClose(byte controllerID)
 void ProcessInput()
 {
 #if RETRO_USING_SDL2
+    if (inputDevice[INPUT_ANY].hold)
+        AnyHold += 1;
+    else
+        AnyHold = 0;
     int length           = 0;
     const byte *keyState = SDL_GetKeyboardState(&length);
 
@@ -554,6 +559,19 @@ void CheckKeyDown(InputData *input, byte flags)
         input->C = inputDevice[INPUT_BUTTONC].hold;
     if (flags & 0x80)
         input->start = inputDevice[INPUT_START].hold;
+}
+
+void RemapAButton(int mapSelected, int newButton)
+{
+    if (mapSelected < 0 || mapSelected >= INPUT_BUTTONCOUNT)
+        return;
+
+    if (inputType == 0) {
+        inputDevice[mapSelected].keyMappings = newButton;
+    }
+    else if (inputType == 1) {
+        inputDevice[mapSelected].contMappings = newButton;
+    }
 }
 
 #if RETRO_USE_HAPTICS

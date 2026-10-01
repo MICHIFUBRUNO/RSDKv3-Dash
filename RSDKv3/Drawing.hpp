@@ -17,6 +17,15 @@ struct DrawListEntry {
     int listSize;
 };
 
+struct DisplaySettings {
+    int offsetX;
+    int width;
+    int height;
+    int unknown1;
+    int maxWidth;
+    byte unknown2;
+};
+
 struct GFXSurface {
     // char fileName[0x40];
     char fileName[0x80]; // originally 0x40, updated to 0x80 in sega forever vers
@@ -44,6 +53,10 @@ extern DrawListEntry drawListEntries[DRAWLAYER_COUNT];
 extern int gfxDataPosition;
 extern GFXSurface gfxSurface[SURFACE_COUNT];
 extern byte graphicData[GFXDATA_SIZE];
+
+extern DisplaySettings displaySettings;
+extern bool convertTo32Bit;
+extern bool mixFiltersOnJekyll;
 
 #if RETRO_USE_ORIGINAL_CODE
 #define VERTEX_COUNT (0x2000)
@@ -187,6 +200,8 @@ void Draw3DSkyLayer(int layerID);
 
 // Shape Drawing
 void DrawRectangle(int XPos, int YPos, int width, int height, int R, int G, int B, int A);
+void DrawClassicFadeOut(int XPos, int YPos, int width, int height, int R, int G, int B, int A);
+void DrawClassicFadeIn(int XPos, int YPos, int width, int height, int R, int G, int B, int A);
 void SetFadeHQ(int R, int G, int B, int A);
 void DrawTintRectangle(int XPos, int YPos, int width, int height);
 void DrawScaledTintMask(int direction, int XPos, int YPos, int pivotX, int pivotY, int scaleX, int scaleY, int width, int height, int sprX, int sprY,

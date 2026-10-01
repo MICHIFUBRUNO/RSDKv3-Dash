@@ -52,6 +52,7 @@ extern InputData keyPress;
 extern InputData keyDown;
 
 extern bool anyPress;
+extern bool AnyHold;
 
 extern int touchDown[8];
 extern int touchX[8];
@@ -117,6 +118,8 @@ void QueueHapticEffect(int hapticID);
 void PlayHaptics(int left, int right, int power);
 void PlayHapticsID(int hapticID);
 void StopHaptics(int hapticID);
+void RemapAButton(int mapSelected, int newButton);
+
 #endif
 
 #endif // !INPUT_H

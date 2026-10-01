@@ -384,6 +384,8 @@ enum RetroBytecodeFormat {
 #include <jni.h>
 #endif
 
+#include <ctime>
+
 extern bool usingCWD;
 extern bool engineDebugMode;
 extern byte renderType;

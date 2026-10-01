@@ -2017,21 +2017,297 @@ void DrawStageGFX()
         DrawDebugOverlays();
 #endif
 
-    if (drawStageGFXHQ && renderType == RENDER_SW) {
+    if (drawStageGFXHQ && renderType == RENDER_SW) 
+    {
         CopyFrameOverlay2x();
-        if (fadeMode > 0) {
+        if (fadeMode == 1) 
+        {
             DrawRectangle(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeA);
             SetFadeHQ(fadeR, fadeG, fadeB, fadeA);
         }
+        if (fadeMode == 2) 
+        {
+            DrawClassicFadeOut(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeX);
+        }
+        if (fadeMode == 3) 
+        {
+           DrawClassicFadeIn(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeX);
+        }
     }
-    else if (fadeMode > 0) {
-        DrawRectangle(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeA);
+    else
+    {
+        if (fadeMode == 1) 
+        {
+            DrawRectangle(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeA);
+        }
+        if (fadeMode == 2) 
+        {
+            DrawClassicFadeOut(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeX);
+        }
+        if (fadeMode == 3) 
+        {
+           DrawClassicFadeIn(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeX);
+        }    
     }
 
 #if !RETRO_USE_ORIGINAL_CODE
     if (!drawStageGFXHQ)
         DrawDebugOverlays();
 #endif
+}
+
+void DrawClassicFadeOut(int XPos, int YPos, int width, int height, int R, int G, int B, int A)
+{
+	
+// #if RETRO_SOFTWARE_RENDER
+    if (width + XPos > GFX_LINESIZE)
+        width = GFX_LINESIZE - XPos;
+    if (XPos < 0) {
+        width += XPos;
+        XPos = 0;
+    }
+    if (height + YPos > SCREEN_YSIZE)
+        height = SCREEN_YSIZE - YPos;
+    if (YPos < 0) {
+        height += YPos;
+        YPos = 0;
+    }
+    if (width <= 0 || height <= 0 || A <= 0)
+        return;
+
+	//A works differently here, and we're going to tweak the value to compensate
+	A *= 3;
+	A >>= 3;
+    
+    int pitch              = GFX_LINESIZE - width;
+    ushort *frameBufferPtr = &Engine.frameBuffer[XPos + GFX_LINESIZE * YPos];
+    ushort clr = 0;
+    PACK_RGB888(clr, R, G, B);
+	int h = height;
+	while (h--) {
+		int w = width;
+		while (w--) {
+			int dif;
+			
+			int Awork = A;
+			
+			int R = (*frameBufferPtr & 0xF800) >> 11;
+			int G = (*frameBufferPtr & 0x7E0) >> 6;
+			int B = *frameBufferPtr & 0x1F;
+			
+			int trgR = (clr & 0xF800) >> 11;
+			int trgG = (clr & 0x7E0) >> 6;
+			int trgB = clr & 0x1F;
+			
+			if (Awork > 0) {	
+				if (trgR > R) {
+					dif = trgR - R;
+					if (dif >= Awork) {
+							R += Awork;
+							Awork = 0;
+					}
+					else {
+						R = trgR;
+						Awork -= dif;
+					}
+				}
+				else if (trgR < R) {
+					dif = R - trgR;
+					if (dif >= Awork) {
+							R -= Awork;
+							Awork = 0;
+					}
+					else {
+						R = trgR;
+						Awork -= dif;
+					}
+				}
+			}
+			if (Awork > 0) {	
+				if (trgG > G) {
+					dif = trgG - G;
+					if (dif >= Awork) {
+							G += Awork;
+							Awork = 0;
+					}
+					else {
+						G = trgG;
+						Awork -= dif;
+					}
+				}
+				else if (trgG < G) {
+					dif = G - trgG;
+					if (dif >= Awork) {
+							G -= Awork;
+							Awork = 0;
+					}
+					else {
+						G = trgG;
+						Awork -= dif;
+					}
+				}
+			}
+			if (Awork > 0) {	
+				if (trgB > B) {
+					dif = trgB - B;
+					if (dif >= Awork) {
+							B += Awork;
+							Awork = 0;
+					}
+					else {
+						B = trgB;
+						Awork -= dif;
+					}
+				}
+				else if (trgB < B) {
+					dif = B - trgB;
+					if (dif >= Awork) {
+							B -= Awork;
+							Awork = 0;
+					}
+					else {
+						B = trgB;
+						Awork -= dif;
+					}
+				}
+			}
+			
+			R <<= 11;
+			G <<= 6;
+			*frameBufferPtr = R | G | B;
+			++frameBufferPtr;
+		}
+		frameBufferPtr += pitch;
+    }
+// #endif
+}
+
+void DrawClassicFadeIn(int XPos, int YPos, int width, int height, int R, int G, int B, int A)
+{
+	
+// #if RETRO_SOFTWARE_RENDER
+    if (width + XPos > GFX_LINESIZE)
+        width = GFX_LINESIZE - XPos;
+    if (XPos < 0) {
+        width += XPos;
+        XPos = 0;
+    }
+    if (height + YPos > SCREEN_YSIZE)
+        height = SCREEN_YSIZE - YPos;
+    if (YPos < 0) {
+        height += YPos;
+        YPos = 0;
+    }
+    if (width <= 0 || height <= 0 || A <= 0)
+        return;
+
+	//A works differently here, and we're going to tweak the value to compensate
+	A = maxVal((256 - A),0);
+	
+	A *= 3;
+	A >>= 3;
+    
+    int pitch              = GFX_LINESIZE - width;
+    ushort *frameBufferPtr = &Engine.frameBuffer[XPos + GFX_LINESIZE * YPos];
+    ushort clr = 0;
+    PACK_RGB888(clr, R, G, B);
+	int h = height;
+	while (h--) {
+		int w = width;
+		while (w--) {
+			int dif;
+			
+			int Awork = A;
+			
+			int trgR = (*frameBufferPtr & 0xF800) >> 11;
+			int trgG = (*frameBufferPtr & 0x7E0) >> 6;
+			int trgB = *frameBufferPtr & 0x1F;
+			
+			int R = (clr & 0xF800) >> 11;
+			int G = (clr & 0x7E0) >> 6;
+			int B = clr & 0x1F;
+					
+			if (Awork > 0) {	
+				if (trgB > B) {
+					dif = trgB - B;
+					if (dif >= Awork) {
+							B += Awork;
+							Awork = 0;
+					}
+					else {
+						B = trgB;
+						Awork -= dif;
+					}
+				}
+				else if (trgB < B) {
+					dif = B - trgB;
+					if (dif >= Awork) {
+							B -= Awork;
+							Awork = 0;
+					}
+					else {
+						B = trgB;
+						Awork -= dif;
+					}
+				}
+			}	
+			if (Awork > 0) {	
+				if (trgG > G) {
+					dif = trgG - G;
+					if (dif >= Awork) {
+							G += Awork;
+							Awork = 0;
+					}
+					else {
+						G = trgG;
+						Awork -= dif;
+					}
+				}
+				else if (trgG < G) {
+					dif = G - trgG;
+					if (dif >= Awork) {
+							G -= Awork;
+							Awork = 0;
+					}
+					else {
+						G = trgG;
+						Awork -= dif;
+					}
+				}
+			}
+			if (Awork > 0) {	
+				if (trgR > R) {
+					dif = trgR - R;
+					if (dif >= Awork) {
+							R += Awork;
+							Awork = 0;
+					}
+					else {
+						R = trgR;
+						Awork -= dif;
+					}
+				}
+				else if (trgR < R) {
+					dif = R - trgR;
+					if (dif >= Awork) {
+							R -= Awork;
+							Awork = 0;
+					}
+					else {
+						R = trgR;
+						Awork -= dif;
+					}
+				}
+			}
+			
+			R <<= 11;
+			G <<= 6;
+			*frameBufferPtr = R | G | B;
+			++frameBufferPtr;
+		}
+		frameBufferPtr += pitch;
+    }
+// #endif
 }
 
 #if !RETRO_USE_ORIGINAL_CODE
@@ -6660,6 +6936,7 @@ void DrawObjectAnimation(void *objScr, void *ent, int XPos, int YPos)
         }
         default: break;
     }
+    
 }
 
 void DrawFace(void *v, uint colour)

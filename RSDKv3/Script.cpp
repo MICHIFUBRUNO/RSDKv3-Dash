@@ -1,6 +1,6 @@
 #include "RetroEngine.hpp"
 #include <cmath>
-
+#include <ctime>
 ObjectScript objectScriptList[OBJECT_COUNT];
 
 ScriptFunction scriptFunctionList[FUNCTION_COUNT];
@@ -17,9 +17,11 @@ int jumpTablePos      = 0;
 int jumpTableOffset   = 0;
 int jumpTableStackPos = 0;
 int functionStackPos  = 0;
+char gameWindowText[0x40];
 
 ScriptEngine scriptEng = ScriptEngine();
 char scriptText[0x100];
+// char gameWindowText [0x100];
 
 
 #define COMMONALIAS_COUNT (0x20)
@@ -28,6 +30,9 @@ int aliasCount = 0;
 int lineID     = 0;
 
 #if RETRO_USE_COMPILER
+enum ScriptVarType { VAR_ALIAS, VAR_STATICVALUE, VAR_TABLE };
+enum ScriptVarAccessModifier { ACCESS_NONE, ACCESS_PUBLIC, ACCESS_PRIVATE };
+
 struct AliasInfo {
     AliasInfo()
     {
@@ -44,6 +49,30 @@ struct AliasInfo {
     char value[0x20];
 };
 #endif
+
+
+struct ScriptVariableInfo {
+    ScriptVariableInfo()
+    {
+        type   = VAR_ALIAS;
+        access = ACCESS_NONE;
+        StrCopy(name, "");
+        StrCopy(value, "");
+    }
+
+    ScriptVariableInfo(byte type, byte access, const char *name, const char *value)
+    {
+        this->type   = type;
+        this->access = access;
+        StrCopy(this->name, name);
+        StrCopy(this->value, value);
+    }
+
+    byte type;
+    byte access;
+    char name[0x20];
+    char value[0x20];
+};
 
 struct FunctionInfo {
     FunctionInfo()
@@ -62,6 +91,7 @@ struct FunctionInfo {
 };
 
 #if RETRO_USE_COMPILER
+
 const char variableNames[][0x20] = {
     "TempValue0",
     "TempValue1",
@@ -294,6 +324,51 @@ const char variableNames[][0x20] = {
 #if RETRO_USE_HAPTICS
     "Engine.HapticsEnabled",
 #endif
+    "Object.Value8",
+    "Object.Value9",
+    "Object.Value10",
+    "Object.Value11",
+    "Object.Value12",
+    "Object.Value13",
+    "Object.Value14",
+    "Object.Value15",
+    "Object.Value16",
+    "Object.Value17",
+    "Object.Value18",
+    "Object.Value19",
+    "Object.Value20",
+    "Object.Value21",
+    "Object.Value22",
+    "Object.Value23",
+    "Object.Value24",
+    "Object.Value25",
+    "Object.Value26",
+    "Object.Value27",
+    "Object.Value28",
+    "Object.Value29",
+    "Object.Value30",
+    "Object.Value31",
+    "Object.Value32",
+    "Object.Value33",
+    "Object.Value34",
+    "Object.Value35",
+    "Object.Value36",
+    "Object.Value37",
+    "Object.Value38",
+    "Object.Value39",
+    "Object.Value40",
+    "Object.Value41",
+    "Object.Value42",
+    "Object.Value43",
+    "Object.Value44",
+    "Object.Value45",
+    "Object.Value46",
+    "Object.Value47",
+    "Time.Year",
+    "Time.Month",
+    "Time.Day",
+    "Player.ScaleH",
+    "Player.ScaleV",
 };
 #endif
 
@@ -435,6 +510,14 @@ const FunctionInfo functions[] = {
 #if RETRO_USE_HAPTICS
     FunctionInfo("HapticEffect", 4),
 #endif
+    FunctionInfo("GetTableValue", 3),
+    FunctionInfo("SetTableValue", 3),
+    FunctionInfo("GetPaletteEntry", 3),
+    FunctionInfo("RemapButton", 2),
+    FunctionInfo("SetClassicFade", 4), // alias of SetClassicFadeOut
+    FunctionInfo("SetClassicFadeOut", 4),
+    FunctionInfo("SetClassicFadeIn", 4),
+    FunctionInfo("SetWindowName", 1),
 };
 
 #if RETRO_USE_COMPILER
@@ -481,6 +564,7 @@ enum ScriptParseModes {
     PARSEMODE_PLATFORMSKIP = 1,
     PARSEMODE_FUNCTION     = 2,
     PARSEMODE_SWITCHREAD   = 3,
+    PARSEMODE_TABLEREAD   = 4,
     PARSEMODE_ERROR        = 0xFF
 };
 #endif
@@ -720,6 +804,51 @@ enum ScrVariable {
 #if RETRO_USE_HAPTICS
     VAR_ENGINEHAPTICSENABLED,
 #endif
+    VAR_OBJECTVALUE8,
+    VAR_OBJECTVALUE9,
+    VAR_OBJECTVALUE10,
+    VAR_OBJECTVALUE11,
+    VAR_OBJECTVALUE12,
+    VAR_OBJECTVALUE13,
+    VAR_OBJECTVALUE14,
+    VAR_OBJECTVALUE15,
+    VAR_OBJECTVALUE16,
+    VAR_OBJECTVALUE17,
+    VAR_OBJECTVALUE18,
+    VAR_OBJECTVALUE19,
+    VAR_OBJECTVALUE20,
+    VAR_OBJECTVALUE21,
+    VAR_OBJECTVALUE22,
+    VAR_OBJECTVALUE23,
+    VAR_OBJECTVALUE24,
+    VAR_OBJECTVALUE25,
+    VAR_OBJECTVALUE26,
+    VAR_OBJECTVALUE27,
+    VAR_OBJECTVALUE28,
+    VAR_OBJECTVALUE29,
+    VAR_OBJECTVALUE30,
+    VAR_OBJECTVALUE31,
+    VAR_OBJECTVALUE32,
+    VAR_OBJECTVALUE33,
+    VAR_OBJECTVALUE34,
+    VAR_OBJECTVALUE35,
+    VAR_OBJECTVALUE36,
+    VAR_OBJECTVALUE37,
+    VAR_OBJECTVALUE38,
+    VAR_OBJECTVALUE39,
+    VAR_OBJECTVALUE40,
+    VAR_OBJECTVALUE41,
+    VAR_OBJECTVALUE42,
+    VAR_OBJECTVALUE43,
+    VAR_OBJECTVALUE44,
+    VAR_OBJECTVALUE45,
+    VAR_OBJECTVALUE46,
+    VAR_OBJECTVALUE47,
+    VAR_TIMEYEAR,
+    VAR_TIMEMONTH,
+    VAR_TIMEDAY,
+    VAR_PLAYERSCALEH,
+    VAR_PLAYERSCALEV,
     VAR_MAX_CNT
 };
 
@@ -861,8 +990,147 @@ enum ScrFunction {
 #if RETRO_USE_HAPTICS
     FUNC_HAPTICEFFECT,
 #endif
+    FUNC_GETTABLEVALUE,
+    FUNC_SETTABLEVALUE,
+    FUNC_GETPALETTEENTRY,
+    FUNC_REMAPBUTTON,
+    FUNC_SETCLASSICFADE,
+    FUNC_SETCLASSICFADEOUT,
+    FUNC_SETCLASSICFADEIN,
+    FUNC_SETWINDOWNAME,
     FUNC_MAX_CNT
 };
+
+// #endif
+void AppendIntegerToString(char *text, int value)
+{
+    int textPos = 0;
+    while (true) {
+        if (!text[textPos])
+            break;
+        ++textPos;
+    }
+
+    int cnt = 0;
+    int v   = value;
+    while (v != 0) {
+        v /= 10;
+        cnt++;
+    }
+
+    v = 0;
+    for (int i = cnt - 1; i >= 0; --i) {
+        v = value / pow(10, i);
+        v %= 10;
+
+        int strValue = v + '0';
+        if (strValue < '0' || strValue > '9') {
+            // what
+        }
+        text[textPos++] = strValue;
+    }
+    if (value == 0)
+        text[textPos++] = '0';
+    text[textPos] = 0;
+}
+// #endif
+
+bool ConvertStringToInteger(const char *text, int *value)
+{
+    int charID    = 0;
+    bool negative = false;
+    int base      = 10;
+    *value        = 0;
+    if (*text != '+' && !(*text >= '0' && *text <= '9') && *text != '-')
+        return false;
+    int strLength = StrLength(text) - 1;
+    uint charVal  = 0;
+    if (*text == '-') {
+        negative = true;
+        charID   = 1;
+        --strLength;
+    }
+    else if (*text == '+') {
+        charID = 1;
+        --strLength;
+    }
+
+    if (text[charID] == '0') {
+        if (text[charID + 1] == 'x' || text[charID + 1] == 'X')
+            base = 0x10;
+#if !RETRO_USE_ORIGINAL_CODE
+        else if (text[charID + 1] == 'b' || text[charID + 1] == 'B')
+            base = 0b10;
+        else if (text[charID + 1] == 'o' || text[charID + 1] == 'O')
+            base = 0010; // base 8
+#endif
+
+        if (base != 10) {
+            charID += 2;
+            strLength -= 2;
+        }
+    }
+
+    while (strLength > -1) {
+        bool flag = text[charID] < '0';
+        if (!flag) {
+            if (base == 0x10 && text[charID] > 'f')
+                flag = true;
+#if !RETRO_USE_ORIGINAL_CODE
+            if (base == 0010 && text[charID] > '7')
+                flag = true;
+            if (base == 0b10 && text[charID] > '1')
+                flag = true;
+#endif
+        }
+
+        if (flag) {
+            return 0;
+        }
+        if (strLength <= 0) {
+            if (text[charID] >= '0' && text[charID] <= '9') {
+                *value = text[charID] + *value - '0';
+            }
+            else if (text[charID] >= 'a' && text[charID] <= 'f') {
+                charVal = text[charID] - 'a';
+                charVal += 10;
+                *value += charVal;
+            }
+            else if (text[charID] >= 'A' && text[charID] <= 'F') {
+                charVal = text[charID] - 'A';
+                charVal += 10;
+                *value += charVal;
+            }
+        }
+        else {
+            int strlen = strLength + 1;
+            charVal    = 0;
+            if (text[charID] >= '0' && text[charID] <= '9') {
+                charVal = text[charID] - '0';
+            }
+            else if (text[charID] >= 'a' && text[charID] <= 'f') {
+                charVal = text[charID] - 'a';
+                charVal += 10;
+            }
+            else if (text[charID] >= 'A' && text[charID] <= 'F') {
+                charVal = text[charID] - 'A';
+                charVal += 10;
+            }
+            for (; --strlen; charVal *= base)
+                ;
+            *value += charVal;
+        }
+        --strLength;
+        ++charID;
+    }
+
+    if (negative)
+        *value = -*value;
+
+    return true;
+}
+
+// #endif
 
 #if RETRO_USE_COMPILER
 void CheckAliasText(char *text)
@@ -1477,37 +1745,6 @@ bool ReadSwitchCase(char *text)
 
     return false;
 }
-void AppendIntegerToString(char *text, int value)
-{
-    int textPos = 0;
-    while (true) {
-        if (!text[textPos])
-            break;
-        ++textPos;
-    }
-
-    int cnt = 0;
-    int v   = value;
-    while (v != 0) {
-        v /= 10;
-        cnt++;
-    }
-
-    v = 0;
-    for (int i = cnt - 1; i >= 0; --i) {
-        v = value / pow(10, i);
-        v %= 10;
-
-        int strValue = v + '0';
-        if (strValue < '0' || strValue > '9') {
-            // what
-        }
-        text[textPos++] = strValue;
-    }
-    if (value == 0)
-        text[textPos++] = '0';
-    text[textPos] = 0;
-}
 #endif
 
 bool ConvertStringToInteger(char *text, int *value)
@@ -1636,6 +1873,127 @@ bool CheckOpcodeType(char *text)
     return true;
 }
 
+bool CheckTableText(char *text)
+{
+    bool hasValues = false;
+
+    if (FindStringToken(text, "table", 1) == 0) {
+#if !RETRO_USE_ORIGINAL_CODE
+        // if (aliasCount >= SCRIPT_VAR_COUNT) {
+        //     SetupTextMenu(&gameMenu[0], 0);
+        //     AddTextMenuEntry(&gameMenu[0], "SCRIPT PARSING FAILED");
+        //     AddTextMenuEntry(&gameMenu[0], " ");
+        //     AddTextMenuEntry(&gameMenu[0], "TOO MANY ALIASES, STATIC");
+        //     AddTextMenuEntry(&gameMenu[0], "VALUES, AND TABLES");
+        //     Engine.gameMode = ENGINE_SCRIPTERROR;
+        //     return false;
+        // }
+#endif
+
+        AliasInfo *alias = &aliases[aliasCount];
+        MEM_ZEROP(alias);
+
+        int textStrPos = 5;
+        int varStrPos  = 0;
+
+        while (text[textStrPos]) {
+            if (text[textStrPos] == '[' || text[textStrPos] == ']') {
+                alias->name[varStrPos] = 0;
+                textStrPos++;
+                break;
+            }
+            else {
+                alias->name[varStrPos++] = text[textStrPos++];
+            }
+        }
+
+        if (FindStringToken(text, "]", 1) < 1) {
+            // has default values, we'll stop here and read stuff in a seperate mode
+            scriptCode[scriptCodePos] = 0;
+            StrCopy(alias->value, "");
+            AppendIntegerToString(alias->value, scriptCodePos);
+            scriptCodeOffset = scriptCodePos++;
+            hasValues        = true;
+        }
+        else {
+            // no default values, just an array size
+
+            varStrPos = 0;
+            while (text[textStrPos]) {
+                if (text[textStrPos] == '[' || text[textStrPos] == ']') {
+                    alias->value[varStrPos] = 0;
+                    textStrPos++;
+                    break;
+                }
+                else {
+                    alias->value[varStrPos++] = text[textStrPos++];
+                }
+            }
+
+            // array size can be an variable (alias), how cool!
+            for (int v = 0; v < aliasCount; ++v) {
+                if (StrComp(alias->value, aliases[v].name))
+                {
+                    StrCopy(alias->value, aliases[v].value);
+                }
+            }
+
+            if (!ConvertStringToInteger(alias->value, &scriptCode[scriptCodePos])) {
+                scriptCode[scriptCodePos] = 1;
+#if !RETRO_USE_ORIGINAL_CODE
+                PrintLog("WARNING: Unable to parse table size!");
+#endif
+            }
+
+            StrCopy(alias->value, "");
+            AppendIntegerToString(alias->value, scriptCodePos);
+
+            int valueCount = scriptCode[scriptCodePos++];
+            for (int v = 0; v < valueCount; ++v) scriptCode[scriptCodePos++] = 0;
+        }
+        aliasCount++;
+    }
+
+    return hasValues;
+}
+void ReadTableValues(char *text)
+{
+    int textStrPos = 0;
+
+    char valueBuffer[256];
+    int valueBufferPos = 0;
+
+    while (text[textStrPos]) {
+        valueBuffer[valueBufferPos++] = text[textStrPos++];
+
+        while (text[textStrPos] == ',') {
+            valueBuffer[valueBufferPos] = 0;
+            ++scriptCode[scriptCodeOffset];
+            if (!ConvertStringToInteger(valueBuffer, &scriptCode[scriptCodePos])) {
+                scriptCode[scriptCodePos] = 0;
+#if !RETRO_USE_ORIGINAL_CODE
+                PrintLog("WARNING: unable to parse table value \"%s\" as an int, on line %d", valueBuffer, lineID);
+#endif
+            }
+            scriptCodePos++;
+            valueBufferPos = 0;
+            textStrPos++;
+        }
+    }
+
+    if (StrLength(valueBuffer)) {
+        valueBuffer[valueBufferPos] = 0;
+        ++scriptCode[scriptCodeOffset];
+        if (!ConvertStringToInteger(valueBuffer, &scriptCode[scriptCodePos])) {
+            scriptCode[scriptCodePos] = 0;
+#if !RETRO_USE_ORIGINAL_CODE
+            PrintLog("WARNING: unable to parse table value \"%s\" as an int, on line %d", valueBuffer, lineID);
+#endif
+        }
+        scriptCodePos++;
+    }
+}
+
 void ParseScriptFile(char *scriptName, int scriptID)
 {
 
@@ -1652,6 +2010,7 @@ void ParseScriptFile(char *scriptName, int scriptID)
     StrAdd(scriptPath, scriptName);
     FileInfo info;
     if (LoadFile(scriptPath, &info)) {
+        bool disableLineIncrement = false;
         objectScriptList[scriptID].mobile = true; // all parsed scripts will use the updated format, old format support is purely for pc bytecode
         int readMode                      = READMODE_NORMAL;
         int parseMode                     = PARSEMODE_SCOPELESS;
@@ -1661,6 +2020,7 @@ void ParseScriptFile(char *scriptName, int scriptID)
         while (readMode < READMODE_EOF) {
             int textPos = 0;
             readMode    = READMODE_NORMAL;
+            
             while (readMode < READMODE_ENDLINE) {
                 prevChar = curChar;
                 FileRead(&curChar, 1);
@@ -1713,6 +2073,10 @@ void ParseScriptFile(char *scriptName, int scriptID)
                 case PARSEMODE_SCOPELESS:
                     ++lineID;
                     CheckAliasText(scriptText);
+                    if (CheckTableText(scriptText)) {
+                        parseMode = PARSEMODE_TABLEREAD;
+                        StrCopy(scriptText, "");
+                    }
                     if (StrComp(scriptText, "subObjectMain")) {
                         parseMode                                        = PARSEMODE_FUNCTION;
                         objectScriptList[scriptID].subMain.scriptCodePtr = scriptCodePos;
@@ -1875,6 +2239,21 @@ void ParseScriptFile(char *scriptName, int scriptID)
                     }
                     break;
 
+                case PARSEMODE_TABLEREAD:
+                    if (!disableLineIncrement)
+                        ++lineID;
+
+                    if (FindStringToken(scriptText, "endtable", 1) == 0) {
+                        parseMode = PARSEMODE_SCOPELESS;
+                    }
+                    else {
+                        if (StrLength(scriptText) >= 1)
+                            ReadTableValues(scriptText);
+
+                        parseMode = PARSEMODE_TABLEREAD;
+                    }
+                    break;
+
                 default: break;
             }
         }
@@ -1882,6 +2261,8 @@ void ParseScriptFile(char *scriptName, int scriptID)
         CloseFile();
     }
 }
+
+
 
 #endif
 
@@ -2732,6 +3113,7 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptSub)
                         }
                         break;
                     }
+                    
                     case VAR_STAGESTATE: scriptEng.operands[i] = stageMode; break;
                     case VAR_STAGEACTIVELIST: scriptEng.operands[i] = activeStageList; break;
                     case VAR_STAGELISTPOS: scriptEng.operands[i] = stageListPosition; break;
@@ -2848,8 +3230,196 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptSub)
 #if RETRO_USE_HAPTICS
                     case VAR_ENGINEHAPTICSENABLED: scriptEng.operands[i] = Engine.hapticsEnabled; break;
 #endif
+                    case VAR_OBJECTVALUE8: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[8];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE9: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[9];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE10: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[10];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE11: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[11];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE12: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[12];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE13: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[13];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE14: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[14];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE15: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[15];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE16: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[16];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE17: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[17];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE18: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[18];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE19: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[19];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE20: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[20];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE21: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[21];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE22: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[22];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE23: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[23];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE24: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[24];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE25: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[25];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE26: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[26];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE27: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[27];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE28: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[28];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE29: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[29];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE30: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[30];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE31: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[31];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE32: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[32];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE33: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[33];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE34: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[34];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE35: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[35];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE36: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[36];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE37: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[37];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE38: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[38];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE39: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[39];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE40: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[40];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE41: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[41];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE42: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[42];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE43: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[43];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE44: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[44];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE45: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[45];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE46: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[46];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE47: {
+                        scriptEng.operands[i] = objectEntityList[arrayVal].values[47];
+                        break;
+                    }
+                    case VAR_TIMEYEAR:
+                    {
+                        time_t now = time(NULL);
+
+                        struct tm *tm_now = localtime(&now);
+
+                        scriptEng.operands[i] = tm_now->tm_year + 1900;
+                        break;
+                    }
+                    case VAR_TIMEMONTH:
+                    {
+                        time_t now = time(NULL);
+
+                        struct tm *tm_now = localtime(&now);
+
+                        scriptEng.operands[i] = tm_now->tm_mon + 1;
+                        break;
+                    }
+                    case VAR_TIMEDAY:
+                    {
+                        time_t now = time(NULL);
+
+                        struct tm *tm_now = localtime(&now);
+
+                        scriptEng.operands[i] = tm_now->tm_mday;
+                        break;
+                    }
                 }
             }
+        
             else if (opcodeType == SCRIPTVAR_INTCONST) { // int constant
                 scriptEng.operands[i] = scriptCode[scriptCodePtr++];
             }
@@ -3320,7 +3890,7 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptSub)
                 break;
             case FUNC_SETSCREENFADE:
                 opcodeSize = 0;
-                SetFade(scriptEng.operands[0], scriptEng.operands[1], scriptEng.operands[2], scriptEng.operands[3]);
+                SetFade(1, scriptEng.operands[0], scriptEng.operands[1], scriptEng.operands[2], scriptEng.operands[3]);
                 break;
             case FUNC_SETACTIVEPALETTE:
                 opcodeSize = 0;
@@ -3582,6 +4152,46 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptSub)
                 newEnt->values[5]     = 0;
                 newEnt->values[6]     = 0;
                 newEnt->values[7]     = 0;
+                newEnt->values[8]     = 0;
+                newEnt->values[9]     = 0;
+                newEnt->values[10]     = 0;
+                newEnt->values[11]     = 0;
+                newEnt->values[12]     = 0;
+                newEnt->values[13]     = 0;
+                newEnt->values[14]     = 0;
+                newEnt->values[15]     = 0;
+                newEnt->values[16]     = 0;
+                newEnt->values[17]     = 0;
+                newEnt->values[18]     = 0;
+                newEnt->values[19]     = 0;
+                newEnt->values[20]     = 0;
+                newEnt->values[21]     = 0;
+                newEnt->values[22]     = 0;
+                newEnt->values[23]     = 0;
+                newEnt->values[24]     = 0;
+                newEnt->values[25]     = 0;
+                newEnt->values[26]     = 0;
+                newEnt->values[27]     = 0;
+                newEnt->values[28]     = 0;
+                newEnt->values[29]     = 0;
+                newEnt->values[30]     = 0;
+                newEnt->values[31]     = 0;
+                newEnt->values[32]     = 0;
+                newEnt->values[33]     = 0;
+                newEnt->values[34]     = 0;
+                newEnt->values[35]     = 0;
+                newEnt->values[36]     = 0;
+                newEnt->values[37]     = 0;
+                newEnt->values[38]     = 0;
+                newEnt->values[39]     = 0;
+                newEnt->values[40]     = 0;
+                newEnt->values[41]     = 0;
+                newEnt->values[42]     = 0;
+                newEnt->values[43]     = 0;
+                newEnt->values[44]     = 0;
+                newEnt->values[45]     = 0;
+                newEnt->values[46]     = 0;
+                newEnt->values[47]     = 0;
                 break;
             }
             case FUNC_PLAYEROBJECTCOLLISION:
@@ -4065,6 +4675,47 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptSub)
                     PlayHaptics(scriptEng.operands[1], scriptEng.operands[2], scriptEng.operands[3]);
                 break;
 #endif
+            case FUNC_GETTABLEVALUE: {
+                int arrPos = scriptEng.operands[1];
+                if (arrPos >= 0) {
+                    int pos     = scriptEng.operands[2];
+                    int arrSize = scriptCode[pos];
+                    if (arrPos < arrSize)
+                        scriptEng.operands[0] = scriptCode[pos + arrPos + 1];
+                }
+                break;
+            }
+            case FUNC_SETTABLEVALUE: {
+                opcodeSize = 0;
+                int arrPos = scriptEng.operands[1];
+                if (arrPos >= 0) {
+                    int pos     = scriptEng.operands[2];
+                    int arrSize = scriptCode[pos];
+                    if (arrPos < arrSize)
+                        scriptCode[pos + arrPos + 1] = scriptEng.operands[0];
+                }
+                break;
+            }
+            case FUNC_GETPALETTEENTRY: { 
+                scriptEng.operands[2] = GetPaletteEntryPacked(scriptEng.operands[0], scriptEng.operands[1]); 
+                break;
+            }
+            case FUNC_REMAPBUTTON: { 
+                scriptEng.operands[2] = GetPaletteEntryPacked(scriptEng.operands[0], scriptEng.operands[1]); 
+                break;
+            case FUNC_SETCLASSICFADE:
+            case FUNC_SETCLASSICFADEOUT:
+                opcodeSize = 0;
+                SetFade(2, scriptEng.operands[0], scriptEng.operands[1], scriptEng.operands[2], scriptEng.operands[3]);
+                break;
+            case FUNC_SETCLASSICFADEIN:
+                opcodeSize = 0;
+                SetFade(3, scriptEng.operands[0], scriptEng.operands[1], scriptEng.operands[2], scriptEng.operands[3]);
+                break;
+            case FUNC_SETWINDOWNAME:
+                MakeNewWindowName(scriptText);
+                break;
+            }
         }
 
         // Set Values
@@ -4683,6 +5334,167 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptSub)
 #if RETRO_USE_HAPTICS
                     case VAR_ENGINEHAPTICSENABLED: Engine.hapticsEnabled = scriptEng.operands[i]; break;
 #endif
+                    case VAR_OBJECTVALUE8: {
+                        objectEntityList[arrayVal].values[8] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE9: {
+                        objectEntityList[arrayVal].values[9] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE10: {
+                        objectEntityList[arrayVal].values[10] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE11: {
+                        objectEntityList[arrayVal].values[11] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE12: {
+                        objectEntityList[arrayVal].values[12] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE13: {
+                        objectEntityList[arrayVal].values[13] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE14: {
+                        objectEntityList[arrayVal].values[14] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE15: {
+                        objectEntityList[arrayVal].values[15] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE16: {
+                        objectEntityList[arrayVal].values[16] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE17: {
+                        objectEntityList[arrayVal].values[17] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE18: {
+                        objectEntityList[arrayVal].values[18] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE19: {
+                        objectEntityList[arrayVal].values[19] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE20: {
+                        objectEntityList[arrayVal].values[20] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE21: {
+                        objectEntityList[arrayVal].values[21] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE22: {
+                        objectEntityList[arrayVal].values[22] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE23: {
+                        objectEntityList[arrayVal].values[23] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE24: {
+                        objectEntityList[arrayVal].values[24] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE25: {
+                        objectEntityList[arrayVal].values[25] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE26: {
+                        objectEntityList[arrayVal].values[26] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE27: {
+                        objectEntityList[arrayVal].values[27] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE28: {
+                        objectEntityList[arrayVal].values[28] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE29: {
+                        objectEntityList[arrayVal].values[29] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE30: {
+                        objectEntityList[arrayVal].values[30] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE31: {
+                        objectEntityList[arrayVal].values[31] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE32: {
+                        objectEntityList[arrayVal].values[32] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE33: {
+                        objectEntityList[arrayVal].values[33] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE34: {
+                        objectEntityList[arrayVal].values[34] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE35: {
+                        objectEntityList[arrayVal].values[35] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE36: {
+                        objectEntityList[arrayVal].values[36] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE37: {
+                        objectEntityList[arrayVal].values[37] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE38: {
+                        objectEntityList[arrayVal].values[38] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE39: {
+                        objectEntityList[arrayVal].values[39] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE40: {
+                        objectEntityList[arrayVal].values[40] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE41: {
+                        objectEntityList[arrayVal].values[41] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE42: {
+                        objectEntityList[arrayVal].values[42] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE43: {
+                        objectEntityList[arrayVal].values[43] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE44: {
+                        objectEntityList[arrayVal].values[44] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE45: {
+                        objectEntityList[arrayVal].values[45] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE46: {
+                        objectEntityList[arrayVal].values[46] = scriptEng.operands[i];
+                        break;
+                    }
+                    case VAR_OBJECTVALUE47: {
+                        objectEntityList[arrayVal].values[47] = scriptEng.operands[i];
+                        break;
+                    }
+
                 }
             }
             else if (opcodeType == SCRIPTVAR_INTCONST) { // int constant
@@ -4703,4 +5515,10 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptSub)
             }
         }
     }
+}
+
+void MakeNewWindowName(char *newName)
+{
+    StrCopy(Engine.gameWindowText, newName);
+    SDL_SetWindowTitle(Engine.window, Engine.gameWindowText);
 }

@@ -8,7 +8,7 @@
 struct Entity {
     int XPos;
     int YPos;
-    int values[8];
+    int values[47];
     int scale;
     int rotation;
     int animationTimer;
@@ -24,6 +24,8 @@ struct Entity {
     byte animation;
     byte prevAnimation;
     byte frame;
+    // int scaleH = 1;
+    // int scaleV = 1;
 };
 
 enum ObjectTypes {

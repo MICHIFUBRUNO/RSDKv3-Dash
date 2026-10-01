@@ -20,9 +20,9 @@ byte fadeA   = 0;
 byte fadeR   = 0;
 byte fadeG   = 0;
 byte fadeB   = 0;
+int fadeX = 0;
 
 int paletteMode = 0;
-
 int texPaletteNum = 0;
 
 uint gfxPalette16to32[0x10000];

@@ -4,7 +4,8 @@
 #define SCRIPTDATA_COUNT (0x40000)
 #define JUMPTABLE_COUNT  (0x4000)
 #define FUNCTION_COUNT   (0x200)
-
+#define COMMON_SCRIPT_VAR_COUNT (33)
+#define SCRIPT_VAR_COUNT (33)
 #define JUMPSTACK_COUNT (0x400)
 #define FUNCSTACK_COUNT (0x400)
 
@@ -41,6 +42,7 @@ struct ScriptEngine {
     int tempValue[8];
     int arrayPosition[3];
     int checkResult;
+    char *operandsstr[10];
 };
 
 enum ScriptSubs { SUB_MAIN = 0, SUB_PLAYERINTERACTION = 1, SUB_DRAW = 2, SUB_SETUP = 3 };
@@ -67,6 +69,9 @@ extern int functionStackPos;
 extern ScriptEngine scriptEng;
 extern char scriptText[0x100];
 
+extern int Year;
+extern int Month;
+extern int Day;
 
 extern int aliasCount;
 extern int lineID;
@@ -76,6 +81,7 @@ bool ConvertStringToInteger(char *text, int *value);
 #if RETRO_USE_COMPILER
 
 void CheckAliasText(char *text);
+bool CheckTableText(char *text);
 void ConvertArithmaticSyntax(char *text);
 void ConvertIfWhileStatement(char *text);
 bool ConvertSwitchStatement(char *text);
@@ -85,6 +91,8 @@ bool ReadSwitchCase(char *text);
 void AppendIntegerToString(char *text, int value);
 void CopyAliasStr(char *dest, char *text, bool arrayIndex);
 bool CheckOpcodeType(char *text); // Never actually used
+void ReadTableValues(char *text);
+void MakeNewWindowName(char *newName);
 
 void ParseScriptFile(char *scriptName, int scriptID);
 #endif

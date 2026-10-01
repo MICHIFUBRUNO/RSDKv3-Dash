@@ -45,6 +45,15 @@ inline bool StrComp(const char *stringA, const char *stringB)
     }
     return match;
 }
+inline void StrCopynoConst(char *dest, const char *src)
+{
+    int i = 0;
+
+    for (; src[i]; ++i) dest[i] = src[i];
+
+    dest[i] = 0;
+}
+
 
 inline int StrLength(const char *string)
 {

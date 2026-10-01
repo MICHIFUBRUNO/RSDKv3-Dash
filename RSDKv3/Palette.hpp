@@ -39,6 +39,7 @@ extern byte fadeB;
 extern int paletteMode;
 
 extern int texPaletteNum;
+extern int fadeX;
 
 extern uint gfxPalette16to32[0x10000];
 
@@ -76,24 +77,30 @@ inline void SetPaletteEntry(byte paletteIndex, byte index, byte r, byte g, byte 
         fullPalette32[paletteIndex][index].r = r;
         fullPalette32[paletteIndex][index].g = g;
         fullPalette32[paletteIndex][index].b = b;
-
-        if (renderType == RENDER_HW) {
-            if (index)
-                fullPalette[paletteIndex][index] |= 1;
-        }
     }
     else {
         PACK_RGB888(activePalette[index], r, g, b);
         activePalette32[index].r = r;
         activePalette32[index].g = g;
         activePalette32[index].b = b;
-
-        if (renderType == RENDER_HW) {
-            if (index)
-                activePalette[index] |= 1;
-        }
     }
 }
+
+inline uint GetPaletteEntryPacked(byte paletteIndex, byte index)
+{
+    PaletteEntry clr = fullPalette32[paletteIndex][index];
+    return (clr.r << 16) | (clr.g << 8) | (clr.b);
+}
+
+inline void SetPaletteEntryPacked(byte paletteIndex, byte index, uint color)
+{
+    PACK_RGB888(fullPalette[paletteIndex][index], (byte)(color >> 16), (byte)(color >> 8), (byte)(color >> 0));
+
+    fullPalette32[paletteIndex][index].r = (byte)(color >> 16);
+    fullPalette32[paletteIndex][index].g = (byte)(color >> 8);
+    fullPalette32[paletteIndex][index].b = (byte)(color >> 0);
+}
+
 
 inline void CopyPalette(byte src, byte dest)
 {
@@ -129,13 +136,16 @@ inline void RotatePalette(byte startIndex, byte endIndex, bool right)
     }
 }
 
-inline void SetFade(byte R, byte G, byte B, ushort A)
+inline void SetFade(byte mode, byte R, byte G, byte B, int A)
 {
-    fadeMode = 1;
+    fadeMode = mode;
     fadeR    = R;
     fadeG    = G;
     fadeB    = B;
-    fadeA    = A > 0xFF ? 0xFF : A;
+	if (fadeMode == 1)
+		fadeA    = A > 0xFF ? 0xFF : A;
+	else
+		fadeX = A;
 }
 void SetLimitedFade(byte paletteID, byte R, byte G, byte B, ushort alpha, int startIndex, int endIndex);
 

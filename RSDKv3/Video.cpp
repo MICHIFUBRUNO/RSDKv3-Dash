@@ -44,7 +44,7 @@ void PlayVideoFile(char *filePath)
         filePath[len - 2] = 0;
     }
 
-    StrCopy(pathBuffer, "videos/");
+    StrCopy(pathBuffer, "Data/Videos/");
     StrAdd(pathBuffer, filePath);
     StrAdd(pathBuffer, ".ogv");
 
@@ -210,7 +210,7 @@ int ProcessVideo()
             fadeMode += 8;
         }
 
-        if (anyPress || touches > 0) {
+        if (AnyHold > 180 || touches > 0) {
             if (!videoSkipped)
                 fadeMode = 0;
 
