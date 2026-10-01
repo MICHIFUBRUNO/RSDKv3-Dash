@@ -1,8 +1,6 @@
 ![](header.png?raw=true)
 
-DON'T DOWNLOAD THIS, IT DOESN'T CONTAIN ANY CHANGES (yet), AND IT MAY BE USED FOR PERSONAL PURPOSES (for now)
-
-A complete decompilation of Retro Engine v3.
+The definitive version of RSDKv3!! (BTW, EXPECT BUGS AND STUFF, THIS IS FAR FROM BEING FINISHED!!!)
 
 # **SUPPORT THE OFFICIAL RELEASE OF SONIC CD**
 + Without assets from the official release, this decompilation will not run.
@@ -18,15 +16,12 @@ A complete decompilation of Retro Engine v3.
 
 Even if your platform isn't supported by the official releases, you **must** buy or officially download it for the assets (you don't need to run the official release, you just need the game assets). See [here](https://rsdkmodding.com/Guides/Games/SonicCD/Datapack/) for a guide on how to find the required assets from your legally obtained copy of the game. Note that only FMV files from the original Steam release of the game are supported; mobile and Origins video files do not work.
 
-# Advantages over the PC version of Sonic CD
-* Sharp, pixel-perfect display.
-* Controls are completely remappable via the settings.ini file.
-* The window allows windows shortcuts to be used.
-* Complete support for using mobile/updated scripts, allowing for features the official PC version never got to be played on PC.
-* Native Windows x64 version, as well as an x86 version.
+# Stuff added (as of now)
+* Tables (use "table" without "private/public" to setup them) and 47 variable per-object fully ported from v4!
+* SetClassicFade() Fully ported from v4+!!
+* Videos now load from the Data Folder instead of the executable's folder!!!!!!!
+* Totally new dynamic window text!!!! (Use SetWindowName("Your thing here") to execute it)
 
-# Advantages over the Mobile versions of Sonic CD
-* The rendering backend is based off the PC version by default, so palettes are fully supported (Tidal Tempest water in particular).
 
 # Additional Tweaks
 * Added a built in mod loader and API, allowing to easily create and play mods with features such as save file redirection and XML GameConfig data.
