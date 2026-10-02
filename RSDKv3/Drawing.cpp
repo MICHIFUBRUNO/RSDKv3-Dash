@@ -1895,6 +1895,7 @@ void DrawObjectList(int Layer)
 }
 void DrawStageGFX()
 {
+    Uint32 start = SDL_GetTicks();
     waterDrawPos = waterLevel - yScrollOffset;
 
     if (renderType == RENDER_SW) {
@@ -2053,7 +2054,10 @@ void DrawStageGFX()
 #if !RETRO_USE_ORIGINAL_CODE
     if (!drawStageGFXHQ)
         DrawDebugOverlays();
+    Uint32 end = SDL_GetTicks();
+    Engine.fps = 1000.0f / (end - start);
 #endif
+
 }
 
 void DrawClassicFadeOut(int XPos, int YPos, int width, int height, int R, int G, int B, int A)

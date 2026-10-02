@@ -425,6 +425,7 @@ public:
     }
 
 #if !RETRO_USE_ORIGINAL_CODE
+    int fps = 0;
     bool usingDataFile_Config = false;
     bool usingDataFileStore   = false;
 #endif
@@ -528,6 +529,7 @@ public:
 #if RETRO_USE_MOD_LOADER
     bool modMenuCalled = false;
 #endif
+
 
     int gameTypeID          = 0;
     const char *releaseType = "Use_Standalone";
