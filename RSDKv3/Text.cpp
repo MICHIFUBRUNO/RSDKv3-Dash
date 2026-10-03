@@ -235,7 +235,7 @@ void AddTextMenuEntry(TextMenu *menu, const char *text)
     }
     menu->rowCount++;
 }
-void AddTextMenuEntryMapped(TextMenu *menu, char *text)
+void AddTextMenuEntryMapped(TextMenu *menu, const char *text)
 {
     menu->entryStart[menu->rowCount]     = menu->textDataPos;
     menu->entrySize[menu->rowCount]      = 0;

@@ -138,6 +138,7 @@ extern GLuint videoBuffer;
 #endif
 extern DrawVertex screenRect[4];
 extern DrawVertex retroScreenRect[4];
+extern int showFPS;
 
 int InitRenderDevice();
 void FlipScreen();
@@ -218,6 +219,9 @@ void DrawSpriteRotated(int direction, int XPos, int YPos, int pivotX, int pivotY
                        int sheetID);
 void DrawSpriteRotozoom(int direction, int XPos, int YPos, int pivotX, int pivotY, int sprX, int sprY, int width, int height, int rotation, int scale,
                         int sheetID);
+void DrawNumberShit(int StartFrame, int XPos, int YPos, int Value, int DigitLimit, int spacing, int showAllDigits);
+void DrawNumberShit2(int StartFrame, int XPos, int YPos, int Value, int DigitLimit, int spacing, int showAllDigits);
+void DrawNumberShit3(int StartFrame, int XPos, int YPos, int Value, int DigitLimit, int spacing, int showAllDigits);
 
 void DrawBlendedSprite(int XPos, int YPos, int width, int height, int sprX, int sprY, int sheetID);
 void DrawAlphaBlendedSprite(int XPos, int YPos, int width, int height, int sprX, int sprY, int alpha, int sheetID);
@@ -235,6 +239,6 @@ void DrawTextMenu(void *menu, int XPos, int YPos);
 void DrawTextMenuEntry(void *menu, int rowID, int XPos, int YPos, int textHighlight);
 void DrawStageTextEntry(void *menu, int rowID, int XPos, int YPos, int textHighlight);
 void DrawBlendedTextMenuEntry(void *menu, int rowID, int XPos, int YPos, int textHighlight);
-void DrawBitmapText(void *menu, int XPos, int YPos, int scale, int spacing, int rowStart, int rowCount);
+// void DrawBitmapText(void *menu, int XPos, int YPos, int scale, int spacing, int rowStart, int rowCount);
 
 #endif // !DRAWING_H

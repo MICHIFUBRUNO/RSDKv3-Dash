@@ -369,6 +369,7 @@ const char variableNames[][0x20] = {
     "Time.Day",
     "Player.ScaleH",
     "Player.ScaleV",
+    "Debug.FPS",
 };
 #endif
 
@@ -518,6 +519,7 @@ const FunctionInfo functions[] = {
     FunctionInfo("SetClassicFadeOut", 4),
     FunctionInfo("SetClassicFadeIn", 4),
     FunctionInfo("SetWindowName", 1),
+    // FunctionInfo("DrawBox", 8),
 };
 
 #if RETRO_USE_COMPILER
@@ -849,6 +851,7 @@ enum ScrVariable {
     VAR_TIMEDAY,
     VAR_PLAYERSCALEH,
     VAR_PLAYERSCALEV,
+    VAR_DEBUG_FPS,
     VAR_MAX_CNT
 };
 
@@ -998,6 +1001,7 @@ enum ScrFunction {
     FUNC_SETCLASSICFADEOUT,
     FUNC_SETCLASSICFADEIN,
     FUNC_SETWINDOWNAME,
+    // FUNC_DRAWBOX,
     FUNC_MAX_CNT
 };
 
@@ -3417,6 +3421,11 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptSub)
                         scriptEng.operands[i] = tm_now->tm_mday;
                         break;
                     }
+                    case VAR_DEBUG_FPS:
+                    {
+                        scriptEng.operands[i] = Engine.fps;
+                        break;
+                    }
                 }
             }
         
@@ -4715,6 +4724,9 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptSub)
             case FUNC_SETWINDOWNAME:
                 MakeNewWindowName(scriptText);
                 break;
+            // case FUNC_DRAWBOX:
+            //     DrawRectangle(scriptEng.operands[0], scriptEng.operands[1], scriptEng.operands[2], scriptEng.operands[3], scriptEng.operands[4], scriptEng.operands[5], scriptEng.operands[6], scriptEng.operands[7]);
+            //     break;
             }
         }
 

@@ -8,6 +8,8 @@
 #include <unistd.h>
 #endif
 
+#include <sdl_ttf.h>
+
 bool usingCWD        = false;
 bool engineDebugMode = false;
 byte renderType      = RENDER_SW;
@@ -217,6 +219,11 @@ bool ProcessEvents()
                             showHitboxes ^= 1;
                         break;
 
+                    // case SDLK_F6:
+                    //     if (Engine.devMenu)
+                    //         showFPS ^= 1;
+                    //     break;
+
                     case SDLK_F10:
                         if (Engine.devMenu)
                             Engine.showPaletteOverlay ^= 1;
@@ -373,6 +380,8 @@ void RetroEngine::Run()
     unsigned long long curTicks   = 0;
     unsigned long long prevTicks  = 0;
 
+    Engine.lastFrame = SDL_GetTicks();
+    Uint32 fpsFrameCount = 0;
     while (running) {
 #if !RETRO_USE_ORIGINAL_CODE
         if (!vsync) {
@@ -382,7 +391,9 @@ void RetroEngine::Run()
             prevTicks = curTicks;
         }
 #endif
+
         running = ProcessEvents();
+
 
         // Focus Checks
         if (!((disableFocusPause + 1) & 2)) {
@@ -507,6 +518,18 @@ void RetroEngine::Run()
 #if RETRO_USING_OPENGL && RETRO_USING_SDL2
         SDL_GL_SwapWindow(Engine.window);
 #endif
+
+#if !RETRO_USE_ORIGINAL_CODE
+        ++fpsFrameCount;
+        Uint32 fpsSampleTime = SDL_GetTicks();
+        Uint32 fpsSampleDuration = fpsSampleTime - Engine.lastFrame;
+        if (fpsSampleDuration >= 1000) {
+            Engine.fps = (fpsFrameCount * 1000 + fpsSampleDuration / 2) / fpsSampleDuration;
+            fpsFrameCount = 0;
+            Engine.lastFrame = fpsSampleTime;
+        }
+#endif
+
         frameStep      = false;
         Engine.message = MESSAGE_NONE;
 
@@ -530,6 +553,7 @@ void RetroEngine::Run()
 #endif
 
 #if RETRO_USING_SDL1 || RETRO_USING_SDL2
+    TTF_Quit();
     SDL_Quit();
 #endif
 }

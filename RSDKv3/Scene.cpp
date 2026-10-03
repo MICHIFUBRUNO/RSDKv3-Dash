@@ -116,6 +116,8 @@ void InitFirstStage()
 
 void ProcessStage(void)
 {
+    // Uint32 start = SDL_GetTicks();
+    waterDrawPos = waterLevel - yScrollOffset;
 #if !RETRO_USE_ORIGINAL_CODE
     debugHitboxCount = 0;
 #endif
@@ -267,7 +269,8 @@ void ProcessStage(void)
             }
 
             // Update
-            ProcessObjects();
+            // if (Engine.frameCount >= (Engine.refreshRate / Engine.fps)) SHIT
+                ProcessObjects();
 
             if (cameraTarget > -1) {
                 if (cameraEnabled == 1) {
@@ -336,6 +339,12 @@ void ProcessStage(void)
             break;
     }
     Engine.frameCount++;
+    // Uint32 frameEnd = SDL_GetTicks();
+    // if (!Engine.lastFrame)
+    //     Engine.lastFrame = start;
+    // Engine.fps      = (frameEnd - Engine.lastFrame) / 1000.0f;
+    // Engine.lastFrame = frameEnd;
+    // SDL_Delay(1);
 }
 
 void LoadStageFiles(void)
@@ -598,6 +607,7 @@ void LoadStageFiles(void)
     xScrollB = (playerList[0].XPos >> 16) - SCREEN_CENTERX + SCREEN_XSIZE;
     yScrollA = (playerList[0].YPos >> 16) - SCREEN_SCROLL_UP;
     yScrollB = (playerList[0].YPos >> 16) - SCREEN_SCROLL_UP + SCREEN_YSIZE;
+
 }
 int LoadActFile(const char *ext, int stageID, FileInfo *info)
 {

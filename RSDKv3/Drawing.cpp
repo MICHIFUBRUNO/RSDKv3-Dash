@@ -15,6 +15,9 @@
 // it rather than remove it outright.
 #define DONT_USE_VIEW_ANGLE (1)
 
+#include <SDL_ttf.h>
+// byte showFPS = 0;
+
 ushort blendLookupTable[0x100 * 0x20];
 ushort subtractLookupTable[0x100 * 0x20];
 ushort tintLookupTable[0x10000];
@@ -97,8 +100,14 @@ bool disableEnhancedScaling = false;
 bool bilinearScaling = false;
 #endif
 
+
+
+
+    
+
 int InitRenderDevice()
 {
+
     char gameTitle[0x40];
 
     sprintf(gameTitle, "%s%s", Engine.gameWindowText, Engine.usingDataFile_Config ? "" : " (Using Data Folder)");
@@ -111,6 +120,9 @@ int InitRenderDevice()
                // This could be resolved by properly updating SDL to 2.32.10, but that'd involve updating a lot of app related files.
 #endif
     SDL_Init(SDL_INIT_EVERYTHING);
+        TTF_Init();
+        
+
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
     SDL_SetHint(SDL_HINT_RENDER_VSYNC, Engine.vsync ? "1" : "0");
@@ -1895,8 +1907,7 @@ void DrawObjectList(int Layer)
 }
 void DrawStageGFX()
 {
-    Uint32 start = SDL_GetTicks();
-    waterDrawPos = waterLevel - yScrollOffset;
+
 
     if (renderType == RENDER_SW) {
         if (waterDrawPos < 0)
@@ -2028,10 +2039,12 @@ void DrawStageGFX()
         }
         if (fadeMode == 2) 
         {
+            // DrawRectangle(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeA);
             DrawClassicFadeOut(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeX);
         }
         if (fadeMode == 3) 
         {
+            // DrawRectangle(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeA);
            DrawClassicFadeIn(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeX);
         }
     }
@@ -2043,10 +2056,12 @@ void DrawStageGFX()
         }
         if (fadeMode == 2) 
         {
+            // DrawRectangle(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeA);
             DrawClassicFadeOut(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeX);
         }
         if (fadeMode == 3) 
         {
+        // DrawRectangle(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeA);
            DrawClassicFadeIn(0, 0, SCREEN_XSIZE, SCREEN_YSIZE, fadeR, fadeG, fadeB, fadeX);
         }    
     }
@@ -2054,8 +2069,8 @@ void DrawStageGFX()
 #if !RETRO_USE_ORIGINAL_CODE
     if (!drawStageGFXHQ)
         DrawDebugOverlays();
-    Uint32 end = SDL_GetTicks();
-    Engine.fps = 1000.0f / (end - start);
+
+    
 #endif
 
 }
@@ -2403,7 +2418,88 @@ void DrawDebugOverlays()
                               0xFF);
             }
         }
+
+        DrawRectangle(SCREEN_XSIZE - 70, 0, 70, 20, 0, 0, 0, 0x80);
+        const int c = AddGraphicsFile("Global/DebugShit.gif");
+        DrawSprite(SCREEN_XSIZE - 60, 1, 23, 7, 80, 0, c);
+        
+        DrawNumberShit(0, 15, 1, Engine.fps, 3, 8, c); // FPS COUNT
+
+        // SpriteFrame *spriteFrame = nullptr;
+        // char shitID = "Global/DebugShit.gif";
+        // int fpssize = 3;
+        // int shitone = 0;
+        // int shittwo = 0;
+        // int shitzero = 3;
+        // int i      = 10;
+        // while (fpssize > 0) {
+        //     int frameID = Engine.fps % i / (i / 10) + 0;
+        //     spriteFrame = &scriptFrames[shittwo + frameID];
+        //     DrawSprite((SCREEN_XSIZE - 40) + shitone, 5, 8, 7, 0, 0, shitID);
+        //     shitone -= 1;
+        //     i *= 10;
+        //     --fpssize;
+        // }
+        
+
+
+        // static TextMenu fpsMenu;
+        // static bool fpsMenuInitialized = false;
+
+        // if (!fpsMenuInitialized) {
+        //     LoadFontFile("Data/Game/HelpText.bin");
+        //     SetupTextMenu(&fpsMenu, 0);
+
+        //     char label[] = "FPS";
+        //     AddTextMenuEntryMapped(&fpsMenu, label);
+        //     fpsMenuInitialized = true;
+        // }
+
+        // textMenuSurfaceNo = AddGraphicsFile("Sprites/SystemText.gif");
+        
+        // DrawBitmapText(&fpsMenu, SCREEN_XSIZE - 65, 5, 0x200, 4, 0, -1);
+
+//         TTF_Font *maxenginedebugfont = TTF_OpenFont("Arial.ttf", 16);
+//         SDL_Color debugcolor = { 255, 255, 255 };
+//         char fpsText[16];
+//         SDL_snprintf(fpsText, sizeof(fpsText), "%d", Engine.fps);
+//         SDL_Surface *fpstext = TTF_RenderText_Solid(maxenginedebugfont, fpsText, debugcolor);
+
+// #if RETRO_USING_SDL2 && !RETRO_USING_OPENGL
+//         SDL_Texture *textTexture = SDL_CreateTextureFromSurface(Engine.renderer, fpstext);
+//         SDL_Rect renderQuad = { SCREEN_XSIZE - 65, 5, fpstext->w, fpstext->h };
+//         SDL_RenderCopy(Engine.renderer, textTexture, NULL, &renderQuad);
+//         SDL_DestroyTexture(textTexture);
+//         SDL_FreeSurface(fpstext);
+// #else
+//         SDL_Surface *rgbaSurface = SDL_ConvertSurfaceFormat(fpstext, SDL_PIXELFORMAT_RGBA32, 0);
+//         SDL_FreeSurface(fpstext);
+
+//         if (rgbaSurface) {
+//             GLuint textTexture = 0;
+//             glGenTextures(1, &textTexture);
+//             glBindTexture(GL_TEXTURE_2D, textTexture);
+
+//             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+//             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+//             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rgbaSurface->w, rgbaSurface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgbaSurface->pixels);
+//             SDL_FreeSurface(rgbaSurface);
+//         }
+//         glEnable(GL_BLEND);
+//         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+// #endif
+//         TTF_CloseFont(maxenginedebugfont);
+
+            // ♥♥♥ ALL OF THAT SHIT WAS TRIED USING AI BECAUSE MY TINY FUCKING MIND ♥♥♥
+
     }
+
+    // DrawNumberShit3(0, -5, 0, stageListPosition, 3, 8, 0); // StageListPos
+    // DrawNumberShit2(0, -5, 0, activeStageList, 3, 8, 0); // StageListPos
 }
 #endif
 
@@ -5379,6 +5475,118 @@ void DrawSprite(int XPos, int YPos, int width, int height, int sprX, int sprY, i
         }
     }
 }
+
+void DrawNumberShit(int StartFrame, int XPos, int YPos, int Value, int DigitLimit, int spacing, int showAllDigits)
+{
+    const int c = AddGraphicsFile("Global/DebugShit.gif");
+
+    const GFXSurface& sheet = gfxSurface[c];
+
+    PrintLog("DebugShit: slot=%d path='%s' size=%dx%d", c, sheet.fileName, sheet.width, sheet.height);
+
+    static SpriteFrame digitFrames[10];
+    static bool framesInitialized = false;
+
+    if (!framesInitialized) {
+        for (int digit = 0; digit < 10; ++digit) {
+            digitFrames[digit].pivotX = 0;
+            digitFrames[digit].pivotY = 0;
+            digitFrames[digit].width  = 8;
+            digitFrames[digit].height = 7;
+            digitFrames[digit].sprX   = digit * 8;
+            digitFrames[digit].sprY   = 0;
+        }
+        framesInitialized = true;
+    }
+
+    int divisor = 1;
+    while (DigitLimit > 0) {
+        int frameID = (Value / divisor) % 10 + StartFrame;
+        bool isLeadingZero = !showAllDigits && divisor > 1 && Value / divisor == 0;
+        if (!isLeadingZero && frameID >= 0 && frameID < 10) {
+            const SpriteFrame &frame = digitFrames[frameID];
+            DrawSprite((SCREEN_XSIZE - 45) + XPos, 10 + YPos, frame.width, frame.height, frame.sprX, frame.sprY, c);
+        }
+        XPos -= spacing;
+        divisor *= 10;
+        --DigitLimit;
+    }
+}
+
+void DrawNumberShit2(int StartFrame, int XPos, int YPos, int Value, int DigitLimit, int spacing, int showAllDigits)
+{
+    const int c = AddGraphicsFile("Global/DebugShit.gif");
+
+    const GFXSurface& sheet = gfxSurface[c];
+
+    PrintLog("DebugShit: slot=%d path='%s' size=%dx%d", c, sheet.fileName, sheet.width, sheet.height);
+
+    static SpriteFrame digitFrames[10];
+    static bool framesInitialized = false;
+
+    if (!framesInitialized) {
+        for (int digit = 0; digit < 10; ++digit) {
+            digitFrames[digit].pivotX = 0;
+            digitFrames[digit].pivotY = 0;
+            digitFrames[digit].width  = 8;
+            digitFrames[digit].height = 7;
+            digitFrames[digit].sprX   = digit * 8;
+            digitFrames[digit].sprY   = 0;
+        }
+        framesInitialized = true;
+    }
+
+    int divisor = 1;
+    while (DigitLimit > 0) {
+        int frameID = (Value / divisor) % 10 + StartFrame;
+        bool isLeadingZero = !showAllDigits && divisor > 1 && Value / divisor == 0;
+        if (!isLeadingZero && frameID >= 0 && frameID < 10) {
+            const SpriteFrame &frame = digitFrames[frameID];
+            DrawSprite((SCREEN_XSIZE - 45) + XPos, 20 + YPos, frame.width, frame.height, frame.sprX, frame.sprY, c);
+        }
+        XPos -= spacing;
+        divisor *= 10;
+        --DigitLimit;
+    }
+}
+
+void DrawNumberShit3(int StartFrame, int XPos, int YPos, int Value, int DigitLimit, int spacing, int showAllDigits)
+{
+    const int c = AddGraphicsFile("Global/DebugShit.gif");
+
+    const GFXSurface& sheet = gfxSurface[c];
+
+    PrintLog("DebugShit: slot=%d path='%s' size=%dx%d", c, sheet.fileName, sheet.width, sheet.height);
+
+    static SpriteFrame digitFrames[10];
+    static bool framesInitialized = false;
+
+    if (!framesInitialized) {
+        for (int digit = 0; digit < 10; ++digit) {
+            digitFrames[digit].pivotX = 0;
+            digitFrames[digit].pivotY = 0;
+            digitFrames[digit].width  = 8;
+            digitFrames[digit].height = 7;
+            digitFrames[digit].sprX   = digit * 8;
+            digitFrames[digit].sprY   = 0;
+        }
+        framesInitialized = true;
+    }
+
+    int divisor = 1;
+    while (DigitLimit > 0) {
+        int frameID = (Value / divisor) % 10 + StartFrame;
+        bool isLeadingZero = !showAllDigits && divisor > 1 && Value / divisor == 0;
+        if (!isLeadingZero && frameID >= 0 && frameID < 10) {
+            const SpriteFrame &frame = digitFrames[frameID];
+            DrawSprite((SCREEN_XSIZE - 45) + XPos + 15, 20 + YPos, frame.width, frame.height, frame.sprX, frame.sprY, c);
+        }
+        XPos -= spacing;
+        divisor *= 10;
+        --DigitLimit;
+    }
+}
+
 
 void DrawSpriteFlipped(int XPos, int YPos, int width, int height, int sprX, int sprY, int direction, int sheetID)
 {

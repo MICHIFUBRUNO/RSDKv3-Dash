@@ -426,6 +426,7 @@ public:
 
 #if !RETRO_USE_ORIGINAL_CODE
     int fps = 0;
+    uint lastFrame = 0;
     bool usingDataFile_Config = false;
     bool usingDataFileStore   = false;
 #endif
@@ -511,7 +512,7 @@ public:
 #ifdef DECOMP_VERSION
     const char *gameVersion = DECOMP_VERSION;
 #else
-    const char *gameVersion = "1.3.3";
+    const char *gameVersion = "a1.1.0";
 #endif
     const char *gamePlatform;
 
